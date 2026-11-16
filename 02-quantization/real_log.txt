@@ -1,0 +1,43 @@
+환경: {'python': '3.13.5', 'torch': '2.15.0+cpu', 'threads': 1, 'cpu': 'x86_64'}
+[0] 실효 비트 = 4 + 16/g (fp16 scale만), zero-point까지 = 4 + 32/g
+  g= 32: 4.500 / 5.000 bit
+  g= 64: 4.250 / 4.500 bit
+  g=128: 4.125 / 4.250 bit
+  g=256: 4.062 / 4.125 bit
+
+[1] 합성 Linear 1024×1024, 아웃라이어 채널 8개(×40)
+  활성값 채널별 max: 보통 채널 중앙값 3.9, 아웃라이어 182.0
+  W4 per-tensor  가중치 MSE 예측 Δ²/12 = 1.934e-04, 실측 1.930e-04 (비 1.00)
+  W4 per-channel 가중치 MSE 예측 Δ²/12 = 5.836e-05, 실측 5.828e-05 (비 1.00)
+  W4 group128    가중치 MSE 예측 Δ²/12 = 3.933e-05, 실측 3.901e-05 (비 0.99)
+  W4 per-tensor RTN    출력 상대오차 6.82e-02
+  W4 per-channel RTN   출력 상대오차 2.05e-02
+  W4 g128 RTN          출력 상대오차 1.39e-02
+  W4 g128 GPTQ         출력 상대오차 3.24e-03
+  W4 g128 AWQ          출력 상대오차 3.07e-03
+  W8A8 naive           출력 상대오차 1.18e-02
+  W8A8 SmoothQuant     출력 상대오차 4.69e-04
+  (AWQ가 고른 α = 0.30)
+
+[실패 장면] calibration 데이터의 아웃라이어 위치가 실제와 다르면
+  W4 g128 RTN (calib 없음)   1.39e-02
+  GPTQ, 맞는 calib           3.24e-03
+  GPTQ, 틀린 calib           6.91e-02
+  AWQ, 맞는 calib            3.07e-03
+  AWQ, 틀린 calib            2.27e-02
+  SmoothQuant, 맞는 calib    4.69e-04
+  SmoothQuant, 틀린 calib    2.64e-01
+Loading weights:   0%|          | 0/272 [00:00<?, ?it/s]Loading weights: 100%|██████████| 272/272 [00:00<00:00, 5348.82it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (40031 > 8192). Running this sequence through the model will result in indexing errors
+
+[2] SmolLM2-135M, 양자화 대상 Linear 210개 (embedding/lm_head 제외), 평가 4096 토큰
+  FP32            PPL 13.49
+  W4 per-channel RTN PPL 28.99
+  W4 g64 RTN      PPL 18.60
+  W4 g64 AWQ      PPL 16.23
+  W4 g64 GPTQ     PPL 16.55
+  W8A8 naive      PPL 29.49
+  W8A8 SmoothQuant PPL 16.49
+  GPTQ 랜덤 calib PPL 21.31
+  SmoothQuant 랜덤 calib PPL 16.04
+[저장] 02-quantization/results/02_real.json
